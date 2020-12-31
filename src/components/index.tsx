@@ -100,7 +100,7 @@ export function DanIndependentPlayerInput(props: {
         values={props.values}
         setValues={props.setValues}
     /><Grid container>
-        <Grid item xs={6}><Typography>DE={danEfficiency(props.field, fromSimple(props.values))}</Typography></Grid>
+        <Grid item xs={6}><Typography>DE={danEfficiency(props.field, fromSimple(props.values))-2}</Typography></Grid>
         <Grid></Grid>
     </Grid>
     <Table size="small"><TableHead><TableRow>

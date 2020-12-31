@@ -70,7 +70,7 @@ export function danEfficiency(field: Field, distribution: Distribution)
         return Infinity
     return (rewardOfField[field][0] * distribution[1] +
             rewardOfField[field][1] * distribution[2]) /
-            distribution[4] - 2
+            distribution[4]
 }
 function _adv(field: Field, distribution: Distribution, internalDan: number, gameType: GameType): number
 {
