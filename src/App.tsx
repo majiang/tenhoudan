@@ -1,26 +1,42 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import Typography from '@material-ui/core/Typography'
+import React from 'react'
+import './App.css'
+import { PlayerInput, InputType } from './components'
+import { Player, defaultPlayer } from './player'
+import { Field, GameType } from './tenhou'
+
+type AppState =
+{
+    field: Field,
+    inputType: InputType,
+    player: Player,
+    gameType: GameType,
+}
+const initialState: AppState =
+{
+    field: '鳳',
+    inputType: 'slider',
+    player: defaultPlayer,
+    gameType: '南'
+}
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    const [state, setState] = React.useState(initialState)
+    return <><PlayerInput
+            field={state.field}
+            setField={(field: Field) => setState({...state, field})}
+            inputType={state.inputType}
+            setInputType={(inputType: InputType) => setState({...state, inputType})}
+            player={state.player}
+            setPlayer={(player: Player) => setState({...state, player})}
+            gameType={state.gameType}
+            setGameType={(gameType: GameType) => setState({...state, gameType})}
+        />
+        <Typography><ul>
+            <li>卓の昇降は考慮せず常に同じ卓で (七段未満も鳳凰卓で, etc) 打ち続ける</li>
+            <li></li>
+        </ul></Typography>
+        </>
 }
 
 export default App;
