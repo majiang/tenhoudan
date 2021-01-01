@@ -54,15 +54,28 @@ export function displayDan(internalDan: number)
     return `${internalDan-2}D`
 }
 export const goal = 13;
-export function reward(field: Field, individualResult: IndividualResult, internalDan: number, gameType: GameType)
+export type Environment =
 {
-    return typeIndependentReward(field, individualResult, internalDan) * gameTypeCoefficient[gameType]
+    field: Field,
+    internalDan: number,
+    gameType: GameType,
 }
-export function typeIndependentReward(field: Field, individualResult: IndividualResult, internalDan: number)
+export type EnvResult = Environment & {result: IndividualResult}
+export type EnvDist = Environment & {distribution: Distribution}
+const normalizeDistribution = <R>(f: (ed: EnvDist) => R) =>
 {
-    if (individualResult <= 2)
-        return rewardOfField[field][individualResult-1] * basePoint
-    if (individualResult === 4)
+    return (ed: EnvDist) => f({...ed, distribution: normalize(ed.distribution)})
+}
+
+export function reward(er: EnvResult)
+{
+    return typeIndependentReward(er.field, er.result, er.internalDan) * gameTypeCoefficient[er.gameType]
+}
+export function typeIndependentReward(field: Field, result: IndividualResult, internalDan: number)
+{
+    if (result <= 2)
+        return rewardOfField[field][result-1] * basePoint
+    if (result === 4)
         return -internalDan * basePoint
     return 0
 }
@@ -74,33 +87,23 @@ export function danEfficiency(field: Field, distribution: Distribution)
             rewardOfField[field][1] * distribution[2]) /
             distribution[4]
 }
-function _adv(field: Field, distribution: Distribution, internalDan: number, gameType: GameType): number
+const _adv = (ed: EnvDist) => sum(individualResults.map((result: IndividualResult) =>
+        reward({...ed, result}) * ed.distribution[result]))
+export const adv = normalizeDistribution(_adv)
+const _dif = (ed: EnvDist) => sum(individualResults.map((result: IndividualResult, i: number) =>
+        reward({...ed, result}) ** 2 * ed.distribution[result]))
+export const dif = normalizeDistribution(_dif)
+export function peclet(ed: EnvDist): number
 {
-    return sum(individualResults.map((result: IndividualResult, i: number) =>
-            reward(field, result, internalDan, gameType) * distribution[result]
-))
+    return _adv(ed) / _dif(ed)
 }
-export function adv(field: Field, distribution: Distribution, internalDan: number, gameType: GameType): number
+export type StructureElement =
 {
-    return _adv(field, distribution, internalDan, gameType) / sum(toSimple(distribution))
+    init: number,
+    up: number,
+    down: number,
 }
-function _dif(field: Field, distribution: Distribution, internalDan: number, gameType: GameType): number
-{
-    return sum(individualResults.map((result: IndividualResult, i: number) =>
-        reward(field, result, internalDan, gameType) ** 2 * distribution[result]
-))
-}
-export function dif(field: Field, distribution: Distribution, internalDan: number, gameType: GameType): number
-{
-    return _dif(field, distribution, internalDan, gameType) / sum(toSimple(distribution))
-}
-export function peclet(field: Field, distribution: Distribution, internalDan: number, gameType: GameType): number
-{
-    return _adv(field, distribution, internalDan, gameType) / _dif(field, distribution, internalDan, gameType)
-}
-export const iota = (length: number) => Array.from({length: length}, (v, k) => k);
-export const dans = iota(goal)
-export const danStructure = [
+export const danStructure: StructureElement[] = [
     {init:    0, up:  100, down: -100}, // 3K
     {init:    0, up:  100, down: -100},
     {init:    0, up:  100, down: -100},
@@ -115,36 +118,70 @@ export const danStructure = [
     {init: 1800, up: 3600, down:    0},
     {init: 2000, up: 4000, down:    0}, // 10D
 ]
-export function promotionProb(field: Field, _distribution: Distribution, internalDan: number, gameType: GameType): number
+export const dans = danStructure.map((_, i) => i)
+function init(internalDan: number)
 {
-    const probs = promotionProbs(field, _distribution, internalDan, gameType)
     const structure = danStructure[internalDan]
-    return probs[(structure.init - structure.down) / basePoint]
+    return (structure.init - structure.down) / basePoint
 }
-export function promotionProbs(field: Field, _distribution: Distribution, internalDan: number, gameType: GameType): number[]
+export function promotionProb(ed: EnvDist): number
 {
-    const distribution = normalize(_distribution)
-    const structure = danStructure[internalDan]
+    return promotionProbs(ed)[init(ed.internalDan)]
+}
+const PromoteDemoteMatrix = normalizeDistribution((ed: EnvDist) =>
+{
+    const structure = danStructure[ed.internalDan]
     const n = (structure.up - structure.down) / basePoint
 
     let transition = eye(n)
-    let promotion1g = zeros(n, 1)
     for (let i = 0; i < n; i++)
     {
-        individualResults.forEach((r: IndividualResult) =>
+        individualResults.forEach((result: IndividualResult) =>
         {
-            const j = i + reward(field, r, internalDan, gameType) / basePoint
+            const j = i + reward({...ed, result}) / basePoint
             if (0 <= j && j < n)
             {
-                transition.set(i, j, transition.get(i, j) - distribution[r])
-            }
-            else if (0 < reward(field, r, internalDan, gameType))
-            {
-                promotion1g.set(i, 0, promotion1g.get(i, 0) - distribution[r])
+                transition.set(i, j, transition.get(i, j) - ed.distribution[result])
             }
         })
     }
-    return Array.from(transition.transpose().solve(promotion1g).data.map((e: number) => -e))
+    return transition.transpose()
+})
+export const promotionProbs = normalizeDistribution((ed: EnvDist) =>
+{
+    const structure = danStructure[ed.internalDan]
+    const n = (structure.up - structure.down) / basePoint
+    let promotion1g = zeros(n, 1)
+    for (let i = 0; i < n; i++)
+    {
+        individualResults.forEach((result: IndividualResult) =>
+        {
+            const j = i + reward({...ed, result}) / basePoint
+            if ((j < 0 || n <= j) && (0 < reward({...ed, result})))
+            {
+                promotion1g.set(i, 0, promotion1g.get(i, 0) - ed.distribution[result])
+            }
+        })
+    }
+    return Array.from(PromoteDemoteMatrix(ed).solve(promotion1g).data.map((e: number) => -e))
+})
+export const promotionEGs = normalizeDistribution((ed: EnvDist) =>
+{
+    const pp = promotionProbs(ed)
+    return Array.from(PromoteDemoteMatrix(ed).solve(new NDArray(pp.map((e) => [e]))).data.map((e: number, i: number) => e/pp[i]))
+})
+export function promotionEG(ed: EnvDist)
+{
+    return promotionEGs(ed)[init(ed.internalDan)]
+}
+export const demotionEGs = normalizeDistribution((ed: EnvDist) =>
+{
+    const dp = promotionProbs(ed).map((e) => 1-e)
+    return Array.from(PromoteDemoteMatrix(ed).solve(new NDArray(dp.map((e) => [e]))).data.map((e: number, i: number) => e/dp[i]))
+})
+export function demotionEG(ed: EnvDist)
+{
+    return demotionEGs(ed)[init(ed.internalDan)]
 }
 export function normalize(distribution: Distribution): Distribution
 {

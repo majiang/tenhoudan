@@ -1,3 +1,5 @@
+export const iota = (length: number) => Array.from({length: length}, (v, k) => k);
+
 export function cumsum(values: number[]): [number[], number]
 {
     let ret = values.slice(0, -1)

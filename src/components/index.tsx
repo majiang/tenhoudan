@@ -17,15 +17,16 @@ import TableCell from '@material-ui/core/TableCell'
 
 import { DanIndependentPlayer, defaultPlayerOf, Player, PlayerType, playerTypes } from '../player'
 import {
-    danEfficiency,
+    Field, fields,
     dans,
+    EnvDist,
+    danEfficiency,
     displayDan,
     Distribution,
     adv, dif, peclet,
-    Field, fields,
     fromSimple, toSimple,
     GameType, gameTypes,
-    promotionProb,
+    promotionProb, promotionEG, demotionEG, demotionEGs,
 } from '../tenhou'
 import { cumsum, decumsum, sum } from '../numeric'
 import CircularProgress from '@material-ui/core/CircularProgress'
@@ -111,36 +112,46 @@ export function DanIndependentPlayerInput(props: {
         <TableCell>dif</TableCell>
         <TableCell><a href="https://note.com/chanpukin/n/ne668771fe917#nhceu">Pe</a></TableCell>
         <TableCell>P↑</TableCell>
+        <TableCell>E↑</TableCell>
+        <TableCell>E↓</TableCell>
         </TableRow></TableHead>
-        <TableBody>{dans.slice().reverse().map((v: number, i: number) => <TableRow key={i}>
-            <TableCell>{displayDan(v)}</TableCell>
-            <TableCell>{adv(props.field, fromSimple(props.values), v, props.gameType)}</TableCell>
-            <TableCell>{dif(props.field, fromSimple(props.values), v, props.gameType)}</TableCell>
-            <TableCell>{peclet(props.field, fromSimple(props.values), v, props.gameType)}</TableCell>
-            <TableCell><DisplayPromotionProb
-                    field={props.field}
-                    values={props.values}
-                    v={v}
-                    gameType={props.gameType}
-                /></TableCell>
-            </TableRow>)}</TableBody>
+        <TableBody>{dans.slice().reverse().map((v: number, i: number) => <DanInformationRow
+            key={i}
+            field={props.field}
+            distribution={fromSimple(props.values)}
+            internalDan={v}
+            gameType={props.gameType}
+        />)}</TableBody>
     </Table>
     </>
 }
-
-function DisplayPromotionProb(props: {field: Field, values: number[], v: number, gameType: GameType})
+function DanInformationRow(props: EnvDist)
 {
-    const [state, setState] = useState(<CircularProgress />)
-    useEffect(() => {
-        const calculate = async() =>
-        {
-            const result = await promotionProb(props.field, fromSimple(props.values), props.v, props.gameType)
-            setState(<>{result}</>)
-        }
-        calculate()
-    }, [props.field, props.values, props.v, props.gameType])
-    return <>{state}</>
+    return <TableRow>
+    <TableCell>{displayDan(props.internalDan)}</TableCell>
+    <TableCell>{adv(props)}</TableCell>
+    <TableCell>{dif(props)}</TableCell>
+    <TableCell>{peclet(props)}</TableCell>
+    <TableCell><LazyCalculation {...props} f={promotionProb} /></TableCell>
+    <TableCell><LazyCalculation {...props} f={promotionEG} /></TableCell>
+    <TableCell><LazyCalculation {...props} f={demotionEG} /></TableCell>
+    </TableRow>
 }
+
+const LazyCalculation = <P, S>(props: P & {f: (props: P) => S}) =>
+    {
+        const [state, setState] = useState(<CircularProgress />)
+        useEffect(() =>
+        {
+            const calculate = async() =>
+            {
+                const result = props.f(props)
+                setState(<>{result}</>)
+            }
+            calculate()
+        }, [props])
+        return <>{state}</>
+    }
 
 export function DistributionInput(props: {values: number[], setValues: (values: number[]) => void, inputType: InputType})
 {
