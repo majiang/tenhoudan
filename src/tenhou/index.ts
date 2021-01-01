@@ -1,3 +1,5 @@
+import { eye, matrix, NDArray, zeros } from 'vectorious'
+
 import { sum } from '../numeric'
 
 export const fields = ['鳳', '特', '上', '般'] as const
@@ -98,18 +100,59 @@ export function peclet(field: Field, distribution: Distribution, internalDan: nu
 }
 export const iota = (length: number) => Array.from({length: length}, (v, k) => k);
 export const dans = iota(goal)
-export const DanStructure = [
-    {init: 0, up: 100, down: -100}, // 3K
-    {init: 0, up: 100, down: -100},
-    {init: 0, up: 100, down: -100},
-    {init: 200, up: 400, down: 0}, // 1D
-    {init: 400, up: 800, down: 0},
-    {init: 600, up: 1200, down: 0},
-    {init: 800, up: 1600, down: 0}, // 4D
-    {init: 1000, up: 2000, down: 0},
-    {init: 1200, up: 2400, down: 0},
-    {init: 1400, up: 2800, down: 0}, // 7D
-    {init: 1600, up: 3200, down: 0},
-    {init: 1800, up: 3600, down: 0},
-    {init: 2000, up: 4000, down: 0}, // 10D
+export const danStructure = [
+    {init:    0, up:  100, down: -100}, // 3K
+    {init:    0, up:  100, down: -100},
+    {init:    0, up:  100, down: -100},
+    {init:  200, up:  400, down:    0}, // 1D
+    {init:  400, up:  800, down:    0},
+    {init:  600, up: 1200, down:    0},
+    {init:  800, up: 1600, down:    0}, // 4D
+    {init: 1000, up: 2000, down:    0},
+    {init: 1200, up: 2400, down:    0},
+    {init: 1400, up: 2800, down:    0}, // 7D
+    {init: 1600, up: 3200, down:    0},
+    {init: 1800, up: 3600, down:    0},
+    {init: 2000, up: 4000, down:    0}, // 10D
 ]
+export function promotionProb(field: Field, _distribution: Distribution, internalDan: number, gameType: GameType): number
+{
+    const probs = promotionProbs(field, _distribution, internalDan, gameType)
+    const structure = danStructure[internalDan]
+    return probs[(structure.init - structure.down) / basePoint]
+}
+export function promotionProbs(field: Field, _distribution: Distribution, internalDan: number, gameType: GameType): number[]
+{
+    const distribution = normalize(_distribution)
+    const structure = danStructure[internalDan]
+    const n = (structure.up - structure.down) / basePoint
+
+    let transition = eye(n)
+    let promotion1g = zeros(n, 1)
+    for (let i = 0; i < n; i++)
+    {
+        individualResults.forEach((r: IndividualResult) =>
+        {
+            const j = i + reward(field, r, internalDan, gameType) / basePoint
+            if (0 <= j && j < n)
+            {
+                transition.set(i, j, transition.get(i, j) - distribution[r])
+            }
+            else if (0 < reward(field, r, internalDan, gameType))
+            {
+                promotion1g.set(i, 0, promotion1g.get(i, 0) - distribution[r])
+            }
+        })
+    }
+    return Array.from(transition.transpose().solve(promotion1g).data.map((e: number) => -e))
+}
+export function normalize(distribution: Distribution): Distribution
+{
+    const denom = sum(toSimple(distribution))
+    return {
+        1: distribution[1] / denom,
+        2: distribution[2] / denom,
+        3: distribution[3] / denom,
+        4: distribution[4] / denom,
+    }
+}

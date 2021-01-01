@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 
 import FormControl from '@material-ui/core/FormControl'
 import FormControlLabel from '@material-ui/core/FormControlLabel'
@@ -25,8 +25,10 @@ import {
     Field, fields,
     fromSimple, toSimple,
     GameType, gameTypes,
+    promotionProb,
 } from '../tenhou'
 import { cumsum, decumsum, sum } from '../numeric'
+import CircularProgress from '@material-ui/core/CircularProgress'
 
 export const inputTypes = ['slider', 'text'] as const
 export type InputType = typeof inputTypes[number]
@@ -108,15 +110,36 @@ export function DanIndependentPlayerInput(props: {
         <TableCell>adv</TableCell>
         <TableCell>dif</TableCell>
         <TableCell><a href="https://note.com/chanpukin/n/ne668771fe917#nhceu">Pe</a></TableCell>
+        <TableCell>P↑</TableCell>
         </TableRow></TableHead>
         <TableBody>{dans.slice().reverse().map((v: number, i: number) => <TableRow key={i}>
             <TableCell>{displayDan(v)}</TableCell>
             <TableCell>{adv(props.field, fromSimple(props.values), v, props.gameType)}</TableCell>
             <TableCell>{dif(props.field, fromSimple(props.values), v, props.gameType)}</TableCell>
             <TableCell>{peclet(props.field, fromSimple(props.values), v, props.gameType)}</TableCell>
+            <TableCell><DisplayPromotionProb
+                    field={props.field}
+                    values={props.values}
+                    v={v}
+                    gameType={props.gameType}
+                /></TableCell>
             </TableRow>)}</TableBody>
     </Table>
     </>
+}
+
+function DisplayPromotionProb(props: {field: Field, values: number[], v: number, gameType: GameType})
+{
+    const [state, setState] = useState(<CircularProgress />)
+    useEffect(() => {
+        const calculate = async() =>
+        {
+            const result = await promotionProb(props.field, fromSimple(props.values), props.v, props.gameType)
+            setState(<>{result}</>)
+        }
+        calculate()
+    }, [props.field, props.values, props.v, props.gameType])
+    return <>{state}</>
 }
 
 export function DistributionInput(props: {values: number[], setValues: (values: number[]) => void, inputType: InputType})

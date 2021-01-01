@@ -33,8 +33,8 @@ function App() {
             setGameType={(gameType: GameType) => setState({...state, gameType})}
         />
         <Typography><ul>
-            <li>卓の昇降は考慮せず常に同じ卓で (七段未満も鳳凰卓で, etc) 打ち続ける</li>
-            <li></li>
+            <li>卓の昇降なし: 常に同じ卓で (七段未満も鳳凰卓で, etc) 打ち続ける</li>
+            <li>3級–1級の昇降あり: 初期0, 昇段100, 降段-100 を仮定</li>
         </ul></Typography>
         </>
 }
