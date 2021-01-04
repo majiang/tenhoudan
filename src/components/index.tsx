@@ -143,19 +143,19 @@ function DanInformationRow(props: EnvDist)
 }
 
 const LazyCalculation = <P, S>(props: P & {f: (props: P) => Promise<S>}) =>
+{
+    const [state, setState] = useState(<CircularProgress />)
+    useEffect(() =>
     {
-        const [state, setState] = useState(<CircularProgress />)
-        useEffect(() =>
+        const calculate = async() =>
         {
-            const calculate = async() =>
-            {
-                const result = await props.f(props)
-                setState(<>{result}</>)
-            }
-            calculate()
-        }, [props])
-        return <>{state}</>
-    }
+            const result = await props.f(props)
+            setState(<>{result}</>)
+        }
+        calculate()
+    }, [props])
+    return <>{state}</>
+}
 
 export function DistributionInput(props: {values: number[], setValues: (values: number[]) => void, inputType: InputType})
 {
