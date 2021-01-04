@@ -1,5 +1,7 @@
 import React, { Suspense, useEffect, useState } from 'react'
+import { wrap } from 'comlink'
 
+import CircularProgress from '@material-ui/core/CircularProgress'
 import FormControl from '@material-ui/core/FormControl'
 import FormControlLabel from '@material-ui/core/FormControlLabel'
 import FormLabel from '@material-ui/core/FormLabel'
@@ -26,10 +28,12 @@ import {
     adv, dif, peclet,
     fromSimple, toSimple,
     GameType, gameTypes,
-    promotionProb, promotionEG, demotionEG, demotionEGs,
 } from '../tenhou'
 import { cumsum, decumsum, sum } from '../numeric'
-import CircularProgress from '@material-ui/core/CircularProgress'
+
+import tenhouWorker from '../tenhou/tenhou.worker'
+const _tenhou = new tenhouWorker()
+const tenhou: any = wrap(_tenhou)
 
 export const inputTypes = ['slider', 'text'] as const
 export type InputType = typeof inputTypes[number]
@@ -132,20 +136,20 @@ function DanInformationRow(props: EnvDist)
     <TableCell>{adv(props)}</TableCell>
     <TableCell>{dif(props)}</TableCell>
     <TableCell>{peclet(props)}</TableCell>
-    <TableCell><LazyCalculation {...props} f={promotionProb} /></TableCell>
-    <TableCell><LazyCalculation {...props} f={promotionEG} /></TableCell>
-    <TableCell><LazyCalculation {...props} f={demotionEG} /></TableCell>
+    <TableCell><LazyCalculation {...props} f={tenhou.promotionProb} /></TableCell>
+    <TableCell><LazyCalculation {...props} f={tenhou.promotionEG} /></TableCell>
+    <TableCell><LazyCalculation {...props} f={tenhou.demotionEG} /></TableCell>
     </TableRow>
 }
 
-const LazyCalculation = <P, S>(props: P & {f: (props: P) => S}) =>
+const LazyCalculation = <P, S>(props: P & {f: (props: P) => Promise<S>}) =>
     {
         const [state, setState] = useState(<CircularProgress />)
         useEffect(() =>
         {
             const calculate = async() =>
             {
-                const result = props.f(props)
+                const result = await props.f(props)
                 setState(<>{result}</>)
             }
             calculate()
