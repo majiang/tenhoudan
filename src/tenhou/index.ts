@@ -124,11 +124,11 @@ function init(internalDan: number)
     const structure = danStructure[internalDan]
     return (structure.init - structure.down) / basePoint
 }
-export function promotionProb(ed: EnvDist): number
+export async function promotionProb(ed: EnvDist): Promise<number>
 {
-    return promotionProbs(ed)[init(ed.internalDan)]
+    return (await promotionProbs(ed))[init(ed.internalDan)]
 }
-const PromoteDemoteMatrix = normalizeDistribution((ed: EnvDist) =>
+const PromoteDemoteMatrix = normalizeDistribution(async (ed: EnvDist) =>
 {
     const structure = danStructure[ed.internalDan]
     const n = (structure.up - structure.down) / basePoint
@@ -147,7 +147,7 @@ const PromoteDemoteMatrix = normalizeDistribution((ed: EnvDist) =>
     }
     return transition.transpose()
 })
-export const promotionProbs = normalizeDistribution((ed: EnvDist) =>
+export const promotionProbs = normalizeDistribution(async (ed: EnvDist) =>
 {
     const structure = danStructure[ed.internalDan]
     const n = (structure.up - structure.down) / basePoint
@@ -163,25 +163,25 @@ export const promotionProbs = normalizeDistribution((ed: EnvDist) =>
             }
         })
     }
-    return Array.from(PromoteDemoteMatrix(ed).solve(promotion1g).data.map((e: number) => -e))
+    return Array.from((await PromoteDemoteMatrix(ed)).solve(promotion1g).data.map((e: number) => -e))
 })
-export const promotionEGs = normalizeDistribution((ed: EnvDist) =>
+export const promotionEGs = normalizeDistribution(async (ed: EnvDist) =>
 {
-    const pp = promotionProbs(ed)
-    return Array.from(PromoteDemoteMatrix(ed).solve(new NDArray(pp.map((e) => [e]))).data.map((e: number, i: number) => e/pp[i]))
+    const pp = await promotionProbs(ed)
+    return Array.from((await PromoteDemoteMatrix(ed)).solve(new NDArray(pp.map((e) => [e]))).data.map((e: number, i: number) => e/pp[i]))
 })
-export function promotionEG(ed: EnvDist)
+export async function promotionEG(ed: EnvDist)
 {
-    return promotionEGs(ed)[init(ed.internalDan)]
+    return (await promotionEGs(ed))[init(ed.internalDan)]
 }
-export const demotionEGs = normalizeDistribution((ed: EnvDist) =>
+export const demotionEGs = normalizeDistribution(async (ed: EnvDist) =>
 {
-    const dp = promotionProbs(ed).map((e) => 1-e)
-    return Array.from(PromoteDemoteMatrix(ed).solve(new NDArray(dp.map((e) => [e]))).data.map((e: number, i: number) => e/dp[i]))
+    const dp = (await promotionProbs(ed)).map((e) => 1-e)
+    return Array.from((await PromoteDemoteMatrix(ed)).solve(new NDArray(dp.map((e) => [e]))).data.map((e: number, i: number) => e/dp[i]))
 })
-export function demotionEG(ed: EnvDist)
+export async function demotionEG(ed: EnvDist)
 {
-    return demotionEGs(ed)[init(ed.internalDan)]
+    return (await demotionEGs(ed))[init(ed.internalDan)]
 }
 export function normalize(distribution: Distribution): Distribution
 {

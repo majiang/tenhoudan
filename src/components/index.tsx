@@ -26,8 +26,9 @@ import {
     adv, dif, peclet,
     fromSimple, toSimple,
     GameType, gameTypes,
-    promotionProb, promotionEG, demotionEG, demotionEGs,
 } from '../tenhou'
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import { promotionProb, promotionEG, demotionEG, demotionEGs } from 'workerize-loader!../tenhou'
 import { cumsum, decumsum, sum } from '../numeric'
 import CircularProgress from '@material-ui/core/CircularProgress'
 
