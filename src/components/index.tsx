@@ -136,24 +136,24 @@ function DanInformationRow(props: EnvDist)
     <TableCell>{adv(props)}</TableCell>
     <TableCell>{dif(props)}</TableCell>
     <TableCell>{peclet(props)}</TableCell>
-    <TableCell><LazyCalculation {...props} f={tenhou.promotionProb} /></TableCell>
-    <TableCell><LazyCalculation {...props} f={tenhou.promotionEG} /></TableCell>
-    <TableCell><LazyCalculation {...props} f={tenhou.demotionEG} /></TableCell>
+    <TableCell><LazyCalculation args={props} f={tenhou.promotionProb} /></TableCell>
+    <TableCell><LazyCalculation args={props} f={tenhou.promotionEG} /></TableCell>
+    <TableCell><LazyCalculation args={props} f={tenhou.demotionEG} /></TableCell>
     </TableRow>
 }
 
-const LazyCalculation = <P, S>(props: P & {f: (props: P) => Promise<S>}) =>
+function LazyCalculation<P, S>(props: {f: (props: P) => Promise<S>, args: P})
 {
     const [state, setState] = useState(<CircularProgress />)
     useEffect(() =>
     {
         const calculate = async() =>
         {
-            const result = await props.f(props)
+            const result = await props.f(props.args)
             setState(<>{result}</>)
         }
         calculate()
-    }, [props])
+    })
     return <>{state}</>
 }
 
