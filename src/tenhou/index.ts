@@ -1,4 +1,4 @@
-import { eye, matrix, NDArray, zeros } from 'vectorious'
+import { eye, NDArray, zeros } from 'vectorious'
 
 import { sum } from '../numeric'
 
