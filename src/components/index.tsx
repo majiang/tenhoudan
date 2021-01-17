@@ -1,7 +1,8 @@
-import React, { Suspense, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { wrap } from 'comlink'
 
 import CircularProgress from '@material-ui/core/CircularProgress'
+import Button from '@material-ui/core/Button'
 import FormControl from '@material-ui/core/FormControl'
 import FormControlLabel from '@material-ui/core/FormControlLabel'
 import FormLabel from '@material-ui/core/FormLabel'
@@ -89,9 +90,47 @@ export function PlayerInput(props:
                         gameType={props.gameType}
                     /></>
             }
+            else if (player.kind === 'array')
+            {
+                return <ArrayPlayerInput
+                    field={props.field}
+                    gameType={props.gameType}
+                    inputType={props.inputType}
+                    values={player.distributions.map(toSimple)}
+                    setValues={(values: number[], i: number) => props.setPlayer(player.setDistribution(fromSimple(values), i))}
+                />
+            }
             else return <Typography>Not Supported Yet</Typography>
         })()}
     </>
+}
+export function ArrayPlayerInput(props:
+{
+    field: Field,
+    gameType: GameType,
+    inputType: InputType,
+    values: number[][],
+    setValues: (values: number[], at: number) => void,
+})
+{
+    return <div>
+        <Button variant="outlined">+</Button>
+        {props.values.map((values, i) =>
+        <DistributionInput
+            inputType={props.inputType}
+            internalDan={i}
+            values={values}
+            setValues={(values: number[]) => props.setValues(values, i)}
+            key={i}
+        />).reverse()}
+        <DanInformationTable
+            distribution={(internalDan: number) => fromSimple(props.values[internalDan])}
+            danEfficiency={true}
+            dans={props.values.map((_, i) => i)}
+            field={props.field}
+            gameType={props.gameType}
+        />
+    </div>
 }
 
 export function DanIndependentPlayerInput(props: {
@@ -110,29 +149,54 @@ export function DanIndependentPlayerInput(props: {
         <Grid item xs={6}><Typography>DE={danEfficiency(props.field, fromSimple(props.values))-2}</Typography></Grid>
         <Grid></Grid>
     </Grid>
-    <Table size="small"><TableHead><TableRow>
-        <TableCell>@</TableCell>
-        <TableCell>adv</TableCell>
-        <TableCell>dif</TableCell>
-        <TableCell><a href="https://note.com/chanpukin/n/ne668771fe917#nhceu">Pe</a></TableCell>
-        <TableCell>P↑</TableCell>
-        <TableCell>E↑</TableCell>
-        <TableCell>E↓</TableCell>
-        </TableRow></TableHead>
-        <TableBody>{dans.slice().reverse().map((v: number, i: number) => <DanInformationRow
-            key={i}
-            field={props.field}
-            distribution={fromSimple(props.values)}
-            internalDan={v}
-            gameType={props.gameType}
-        />)}</TableBody>
-    </Table>
+    <DanInformationTable
+        distribution={(internalDan: number) => fromSimple(props.values)}
+        dans={dans}
+        danEfficiency={false}
+        field={props.field}
+        gameType={props.gameType}
+    />
     </>
 }
-function DanInformationRow(props: EnvDist)
+function DanInformationTable(props:
+{
+    distribution: (internalDan: number) => Distribution,
+    danEfficiency: boolean,
+    dans: number[],
+    field: Field,
+    gameType: GameType,
+})
+{
+    return <Table size="small">
+        <DanInformationHeader danEfficiency={props.danEfficiency}/>
+        <TableBody>{props.dans.map((v: number, i: number) => <DanInformationRow
+            key={i}
+            danEfficiency={props.danEfficiency}
+            field={props.field}
+            distribution={props.distribution(v)}
+            internalDan={v}
+            gameType={props.gameType}
+        />).reverse()}</TableBody>
+    </Table>
+}
+function DanInformationHeader(props: {danEfficiency: boolean})
+{
+    return <TableHead><TableRow>
+    <TableCell>@</TableCell>
+    {props.danEfficiency ? <TableCell>DE</TableCell> : <></>}
+    <TableCell>adv</TableCell>
+    <TableCell>dif</TableCell>
+    <TableCell><a href="https://note.com/chanpukin/n/ne668771fe917#nhceu">Pe</a></TableCell>
+    <TableCell>P↑</TableCell>
+    <TableCell>E↑</TableCell>
+    <TableCell>E↓</TableCell>
+    </TableRow></TableHead>
+}
+function DanInformationRow(props: EnvDist & {danEfficiency: boolean})
 {
     return <TableRow>
     <TableCell>{displayDan(props.internalDan)}</TableCell>
+    {props.danEfficiency ? <TableCell>{danEfficiency(props.field, props.distribution)}</TableCell> : <></>}
     <TableCell>{adv(props)}</TableCell>
     <TableCell>{dif(props)}</TableCell>
     <TableCell>{peclet(props)}</TableCell>
@@ -153,21 +217,23 @@ function LazyCalculation<P, S>(props: {f: (props: P) => Promise<S>, args: P})
             setState(<>{result}</>)
         }
         calculate()
-    })
+        return () => setState(<CircularProgress />)
+    }, [props.args])
     return <>{state}</>
 }
 
-export function DistributionInput(props: {values: number[], setValues: (values: number[]) => void, inputType: InputType})
+export function DistributionInput(props: {values: number[], setValues: (values: number[]) => void, inputType: InputType, internalDan?: number})
 {
-    if (props.inputType === 'slider')
-        return <Grid container>
-            <Grid item xs={8}><SliderDistribution values={props.values} setValues={props.setValues} /></Grid>
-            <Grid item xs={4}><FloatingPointDistributionDisplay values={props.values} /></Grid>
-        </Grid>
-    else
-        return <Grid container>
-            <Grid item xs={6}><TextDistribution values={props.values} setValues={props.setValues} /></Grid>
-            <Grid item xs={6}><FloatingPointDistributionDisplay values={props.values} /></Grid>
+    const Distribution = (props.inputType === 'slider' ? SliderDistribution : TextDistribution)
+    let widths: [3|4|5|6|7|8, 3|4|5|6|7|8] = props.inputType === 'slider' ? [8, 4] : [6, 6]
+    if (props.internalDan !== undefined)
+    {
+        widths[1] -= 1
+    }
+    return <Grid container justify="space-around" spacing={1}>
+            {props.internalDan !== undefined ? <Grid item xs={1}><Typography>{displayDan(props.internalDan)}</Typography></Grid> : <></> }
+            <Grid item xs={widths[0]}><Distribution values={props.values} setValues={props.setValues} /></Grid>
+            <Grid item xs={widths[1]}><FloatingPointDistributionDisplay values={props.values} /></Grid>
         </Grid>
 }
 
@@ -200,7 +266,7 @@ export function SliderDistribution(props: {values: number[], setValues: (values:
 }
 
 export function FloatingPointDistributionDisplay(props: {values: number[]})
-{;
+{
     const a = sum(props.values)
     return <Grid container>
         {props.values.map((v, i) => <Grid item xs={3} key={i}><Typography>

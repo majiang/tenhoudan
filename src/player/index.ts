@@ -27,19 +27,23 @@ export const defaultPlayer = new DanIndependentPlayer(fromSimple([2500, 2500, 25
 export class ArrayPlayer
 {
     kind: 'array' = 'array'
-    private _distributions: Distribution[]
+    distributions: Distribution[]
     constructor (distributions: Distribution[])
     {
-        this._distributions = distributions
+        this.distributions = distributions
     }
     distribution(currentDan: number): Distribution
     {
-        return this._distributions[currentDan]
+        return this.distributions[currentDan]
     }
     setDistribution(distribution: Distribution, currentDan: number)
     {
-        this._distributions[currentDan] = distribution
+        this.distributions[currentDan] = distribution
         return this
+    }
+    distributionLength()
+    {
+        return this.distributions.length
     }
 }
 
