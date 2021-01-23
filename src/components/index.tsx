@@ -18,7 +18,7 @@ import TableBody from '@material-ui/core/TableBody'
 import TableRow from '@material-ui/core/TableRow'
 import TableCell from '@material-ui/core/TableCell'
 
-import { DanIndependentPlayer, defaultPlayerOf, Player, PlayerType, playerTypes } from '../player'
+import { ArrayPlayer, DanIndependentPlayer, defaultPlayerOf, Player, PlayerType, playerTypes } from '../player'
 import {
     Field, fields,
     dans,
@@ -92,62 +92,71 @@ export function PlayerInput(props:
     gameType: GameType, setGameType: (gameType: GameType) => void,
 })
 {
-    const player = props.player
     return <>
         <Conditions
             playerType={props.player.kind}
             setPlayerType={(playerType: PlayerType) => props.setPlayer(defaultPlayerOf(playerType))}
             {...props}
         />
-        {(() => {
-            if (player.kind === 'independent')
+        <PlayerDistributionInput {...props} />
+        <PlayerDistributionInfo {...props} />
+    </>
+}
+function PlayerDistributionInput(props:
+{
+    player: Player, setPlayer: (player: Player) => void,
+    inputType: InputType,
+    field: Field,
+    gameType: GameType,
+})
+{
+            if (props.player.kind === 'independent')
             {
-                const distribution = player.distribution()
-                const setDistribution = (_distribution: Distribution) => props.setPlayer(player.setDistribution(_distribution))
+                const distribution = props.player.distribution()
+                const setDistribution = (_distribution: Distribution) => props.setPlayer((props.player as DanIndependentPlayer).setDistribution(_distribution))
                 return <>
                     <DanIndependentPlayerInput
-                        inputType={props.inputType}
                         values={toSimple(distribution)}
                         setValues={(values: number[]) => setDistribution(fromSimple(values))}
-                        field={props.field}
-                        gameType={props.gameType}
+                        {...props}
                     /></>
             }
-            else if (player.kind === 'array')
+            else if (props.player.kind === 'array')
             {
                 return <ArrayPlayerInput
-                    field={props.field}
-                    gameType={props.gameType}
-                    inputType={props.inputType}
-                    values={player.distributions.map(toSimple)}
-                    setValues={(values: number[], i: number) => props.setPlayer(player.setDistribution(fromSimple(values), i))}
+                    values={props.player.distributions.map(toSimple)}
+                    setValues={(values: number[], i: number) => props.setPlayer((props.player as ArrayPlayer).setDistribution(fromSimple(values), i))}
+                    {...props}
                 />
             }
             else return <Typography>Not Supported Yet</Typography>
-        })()}
-        {(() => {
-            if (player.kind === 'independent')
+        }
+function PlayerDistributionInfo(props:
+{
+    player: Player,
+    field: Field,
+    gameType: GameType,
+})
+{
+            if (props.player.kind === 'independent')
             {
                 return <DanInformationTable
-                    distribution={(internalDan: number) => player.distribution()}
+                    distribution={(internalDan: number) => (props.player as DanIndependentPlayer).distribution()}
                     dans={dans}
                     danEfficiency={false}
-                    field={props.field}
-                    gameType={props.gameType}
+                    {...props}
                 />
             }
-            else if (player.kind === 'array')
+            else if (props.player.kind === 'array')
             {
                 return <DanInformationTable
-                    distribution={(internalDan: number) => player.distributions[internalDan]}
+                    distribution={(internalDan: number) => (props.player as ArrayPlayer).distributions[internalDan]}
                     danEfficiency={true}
-                    dans={player.distributions.map((_, i) => i)}
-                    field={props.field}
-                    gameType={props.gameType} />
+                    dans={props.player.distributions.map((_, i) => i)}
+                    {...props}
+                />
             }
             else return <></>
-        })()}
-    </>
 }
 export function ArrayPlayerInput(props:
 {
