@@ -110,27 +110,27 @@ function PlayerDistributionInput(props:
     gameType: GameType,
 })
 {
-            if (props.player.kind === 'independent')
-            {
-                const distribution = props.player.distribution()
-                const setDistribution = (_distribution: Distribution) => props.setPlayer((props.player as DanIndependentPlayer).setDistribution(_distribution))
-                return <>
-                    <DanIndependentPlayerInput
-                        values={toSimple(distribution)}
-                        setValues={(values: number[]) => setDistribution(fromSimple(values))}
-                        {...props}
-                    /></>
-            }
-            else if (props.player.kind === 'array')
-            {
-                return <ArrayPlayerInput
-                    values={props.player.distributions.map(toSimple)}
-                    setValues={(values: number[], i: number) => props.setPlayer((props.player as ArrayPlayer).setDistribution(fromSimple(values), i))}
-                    {...props}
-                />
-            }
-            else return <Typography>Not Supported Yet</Typography>
-        }
+    if (props.player.kind === 'independent')
+    {
+        const distribution = props.player.distribution()
+        const setDistribution = (_distribution: Distribution) => props.setPlayer((props.player as DanIndependentPlayer).setDistribution(_distribution))
+        return <>
+            <DanIndependentPlayerInput
+                values={toSimple(distribution)}
+                setValues={(values: number[]) => setDistribution(fromSimple(values))}
+                {...props}
+            /></>
+    }
+    else if (props.player.kind === 'array')
+    {
+        return <ArrayPlayerInput
+            values={props.player.distributions.map(toSimple)}
+            setValues={(values: number[], i: number) => props.setPlayer((props.player as ArrayPlayer).setDistribution(fromSimple(values), i))}
+            {...props}
+        />
+    }
+    else return <Typography>Not Supported Yet</Typography>
+}
 function PlayerDistributionInfo(props:
 {
     player: Player,
@@ -138,25 +138,25 @@ function PlayerDistributionInfo(props:
     gameType: GameType,
 })
 {
-            if (props.player.kind === 'independent')
-            {
-                return <DanInformationTable
-                    distribution={(internalDan: number) => (props.player as DanIndependentPlayer).distribution()}
-                    dans={dans}
-                    danEfficiency={false}
-                    {...props}
-                />
-            }
-            else if (props.player.kind === 'array')
-            {
-                return <DanInformationTable
-                    distribution={(internalDan: number) => (props.player as ArrayPlayer).distributions[internalDan]}
-                    danEfficiency={true}
-                    dans={props.player.distributions.map((_, i) => i)}
-                    {...props}
-                />
-            }
-            else return <></>
+    if (props.player.kind === 'independent')
+    {
+        return <DanInformationTable
+            distribution={(internalDan: number) => (props.player as DanIndependentPlayer).distribution()}
+            dans={dans}
+            danEfficiency={false}
+            {...props}
+        />
+    }
+    else if (props.player.kind === 'array')
+    {
+        return <DanInformationTable
+            distribution={(internalDan: number) => (props.player as ArrayPlayer).distributions[internalDan]}
+            danEfficiency={true}
+            dans={props.player.distributions.map((_, i) => i)}
+            {...props}
+        />
+    }
+    else return <></>
 }
 export function ArrayPlayerInput(props:
 {
