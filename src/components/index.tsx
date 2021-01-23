@@ -125,6 +125,28 @@ export function PlayerInput(props:
             }
             else return <Typography>Not Supported Yet</Typography>
         })()}
+        {(() => {
+            if (player.kind === 'independent')
+            {
+                return <DanInformationTable
+                    distribution={(internalDan: number) => player.distribution()}
+                    dans={dans}
+                    danEfficiency={false}
+                    field={props.field}
+                    gameType={props.gameType}
+                />
+            }
+            else if (player.kind === 'array')
+            {
+                return <DanInformationTable
+                    distribution={(internalDan: number) => player.distributions[internalDan]}
+                    danEfficiency={true}
+                    dans={player.distributions.map((_, i) => i)}
+                    field={props.field}
+                    gameType={props.gameType} />
+            }
+            else return <></>
+        })()}
     </>
 }
 export function ArrayPlayerInput(props:
@@ -146,13 +168,6 @@ export function ArrayPlayerInput(props:
             setValues={(values: number[]) => props.setValues(values, i)}
             key={i}
         />).reverse()}
-        <DanInformationTable
-            distribution={(internalDan: number) => fromSimple(props.values[internalDan])}
-            danEfficiency={true}
-            dans={props.values.map((_, i) => i)}
-            field={props.field}
-            gameType={props.gameType}
-        />
     </div>
 }
 
@@ -172,13 +187,6 @@ export function DanIndependentPlayerInput(props: {
         <Grid item xs={6}><Typography>DE={danEfficiency(props.field, fromSimple(props.values))-2}</Typography></Grid>
         <Grid></Grid>
     </Grid>
-    <DanInformationTable
-        distribution={(internalDan: number) => fromSimple(props.values)}
-        dans={dans}
-        danEfficiency={false}
-        field={props.field}
-        gameType={props.gameType}
-    />
     </>
 }
 function DanInformationTable(props:
