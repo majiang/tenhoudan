@@ -60,22 +60,45 @@ const InputTypeSelector = RadioSelector<InputType>(inputTypes, 'Input Type')
 const PlayerTypeSelector = RadioSelector<PlayerType>(playerTypes, 'Player Type')
 const GameTypeSelector = RadioSelector<GameType>(gameTypes, 'Game Type')
 
+export function Conditions(props:
+{
+    playerType: PlayerType, setPlayerType: (playreType: PlayerType) => void,
+    inputType: InputType, setInputType: (inputType: InputType) => void,
+    field: Field, setField: (field: Field) => void,
+    gameType: GameType, setGameType: (gameType: GameType) => void,
+})
+{
+    return <Grid container>
+        <Grid item><PlayerTypeSelector
+            value={props.playerType}
+            setValue={props.setPlayerType} /></Grid>
+        <Grid item><InputTypeSelector
+            value={props.inputType}
+            setValue={props.setInputType} /></Grid>
+        <Grid item><FieldSelector
+            value={props.field}
+            setValue={props.setField} /></Grid>
+        <Grid item><GameTypeSelector
+            value={props.gameType}
+            setValue={props.setGameType} /></Grid>
+    </Grid>
+}
+
 export function PlayerInput(props:
-    {
-        player: Player, setPlayer: (player: Player) => void,
-        inputType: InputType, setInputType: (inputType: InputType) => void,
-        field: Field, setField: (field: Field) => void,
-        gameType: GameType, setGameType: (gameType: GameType) => void,
-    })
+{
+    player: Player, setPlayer: (player: Player) => void,
+    inputType: InputType, setInputType: (inputType: InputType) => void,
+    field: Field, setField: (field: Field) => void,
+    gameType: GameType, setGameType: (gameType: GameType) => void,
+})
 {
     const player = props.player
     return <>
-        <PlayerTypeSelector value={props.player.kind} setValue={
-            (playerType: PlayerType) => props.setPlayer(defaultPlayerOf(playerType))
-        } />
-        <InputTypeSelector value={props.inputType} setValue={props.setInputType} />
-        <FieldSelector value={props.field} setValue={props.setField} />
-        <GameTypeSelector value={props.gameType} setValue={props.setGameType} />
+        <Conditions
+            playerType={props.player.kind}
+            setPlayerType={(playerType: PlayerType) => props.setPlayer(defaultPlayerOf(playerType))}
+            {...props}
+        />
         {(() => {
             if (player.kind === 'independent')
             {
