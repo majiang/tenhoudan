@@ -112,22 +112,19 @@ function PlayerDistributionInput(props:
 {
     if (props.player.kind === 'independent')
     {
-        const distribution = props.player.distribution()
-        const setDistribution = (_distribution: Distribution) => props.setPlayer((props.player as DanIndependentPlayer).setDistribution(_distribution))
-        return <>
-            <DanIndependentPlayerInput
-                values={toSimple(distribution)}
-                setValues={(values: number[]) => setDistribution(fromSimple(values))}
-                {...props}
-            /></>
+        return <DanIndependentPlayerInput
+            values={toSimple(props.player.distribution())}
+            setValues={(values: number[]) =>
+                props.setPlayer((props.player as DanIndependentPlayer).setDistribution(fromSimple(values)))}
+            {...props} />
     }
     else if (props.player.kind === 'array')
     {
         return <ArrayPlayerInput
             values={props.player.distributions.map(toSimple)}
-            setValues={(values: number[], i: number) => props.setPlayer((props.player as ArrayPlayer).setDistribution(fromSimple(values), i))}
-            {...props}
-        />
+            setValues={(values: number[], i: number) =>
+                props.setPlayer((props.player as ArrayPlayer).setDistribution(fromSimple(values), i))}
+            {...props} />
     }
     else return <Typography>Not Supported Yet</Typography>
 }
@@ -138,25 +135,24 @@ function PlayerDistributionInfo(props:
     gameType: GameType,
 })
 {
-    if (props.player.kind === 'independent')
-    {
-        return <DanInformationTable
-            distribution={(internalDan: number) => (props.player as DanIndependentPlayer).distribution()}
-            dans={dans}
-            danEfficiency={false}
-            {...props}
-        />
-    }
-    else if (props.player.kind === 'array')
-    {
-        return <DanInformationTable
-            distribution={(internalDan: number) => (props.player as ArrayPlayer).distributions[internalDan]}
-            danEfficiency={true}
-            dans={props.player.distributions.map((_, i) => i)}
-            {...props}
-        />
-    }
-    else return <></>
+    // TODO: appropriate polymorphism
+    const distribution =
+        props.player.kind === 'independent'
+        ? (internalDan: number) => (props.player as DanIndependentPlayer).distribution()
+        : props.player.kind === 'array'
+        ? (internalDan: number) => (props.player as ArrayPlayer).distributions[internalDan]
+        : (internalDan: number) => ({1:1, 2:1, 3:1, 4:1}) // TODO: Fallback
+    const _dans =
+        props.player.kind === 'array'
+        ? props.player.distributions.map((_, i) => i)
+        : dans
+    const danEfficiency =
+        props.player.kind !== 'independent'
+    return <DanInformationTable
+        distribution={distribution}
+        dans={_dans}
+        danEfficiency={danEfficiency}
+        {...props} />
 }
 export function ArrayPlayerInput(props:
 {
