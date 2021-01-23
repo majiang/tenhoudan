@@ -18,7 +18,7 @@ import TableBody from '@material-ui/core/TableBody'
 import TableRow from '@material-ui/core/TableRow'
 import TableCell from '@material-ui/core/TableCell'
 
-import { ArrayPlayer, DanIndependentPlayer, defaultPlayerOf, Player, PlayerType, playerTypes } from '../player'
+import { ArrayPlayer, DanIndependentPlayer, defaultPlayerOf, FunctionPlayer, Player, PlayerType, playerTypes } from '../player'
 import {
     Field, fields,
     dans,
@@ -126,8 +126,58 @@ function PlayerDistributionInput(props:
                 props.setPlayer((props.player as ArrayPlayer).setDistribution(fromSimple(values), i))}
             {...props} />
     }
-    else return <Typography>Not Supported Yet</Typography>
+    else
+    {
+        return <FunctionPlayerInput
+            maxInternalDan={props.player.maxInternalDan}
+            setMaxInternalDan={(maxInternalDan: number) => props.setPlayer((props.player as FunctionPlayer).setMaxInternalDan(maxInternalDan))}
+            value={props.player.distributionFunction.distributionFunctionString}
+            setValue={(value: string) => props.setPlayer((props.player as FunctionPlayer).setDistributionFunction(value))}
+            isError={(props.player as FunctionPlayer).distributionFunction.distributionFunction === undefined}
+            {...props} />
+    }
 }
+
+function FunctionPlayerInput(props:
+{
+    field: Field, gameType: GameType,
+    maxInternalDan: number,
+    setMaxInternalDan: (maxInternalDan: number) => void,
+    value: string,
+    setValue: (value: string) => void,
+    isError: boolean,
+})
+{
+    return <>
+    <Grid container>
+        <Grid item xs={4}>
+            <Typography>段位上限 (exclusive): {props.maxInternalDan} ({displayDan(props.maxInternalDan)})</Typography>
+        </Grid>
+        <Grid item xs><Slider min={1} max={23}
+            value={props.maxInternalDan} onChange={(e, v) =>
+            {
+                if (typeof v === 'number')
+                    props.setMaxInternalDan(v)
+                else
+                    console.error('multiple maxInternalDan values')
+            }} /></Grid>
+    </Grid>
+    <div style={props.isError ? {backgroundColor: '#ffeeee'} : {}}>
+    <Typography>// dan: 現在段位 (k級: 3-k; d段: d+2)</Typography>
+    <Typography>function distribution(dan: number)</Typography>
+    <Typography>{'{'}</Typography>
+    <Grid container>
+    <Grid item xs={1}></Grid>
+    <Grid item xs><TextField fullWidth multiline margin='dense' rows={10} rowsMax={20} variant='filled'
+        value={props.value} onChange={(e) => props.setValue(e.target.value)} />
+    </Grid>
+    </Grid>
+    <Typography>{'}'}</Typography>
+    <Typography>// 返却値: [1位, 2位, 3位, 4位] 比率 (合計は非0であればよい: 正規化は自動)</Typography>
+    </div>
+    </>
+}
+
 function PlayerDistributionInfo(props:
 {
     player: Player,
@@ -141,13 +191,15 @@ function PlayerDistributionInfo(props:
         ? (internalDan: number) => (props.player as DanIndependentPlayer).distribution()
         : props.player.kind === 'array'
         ? (internalDan: number) => (props.player as ArrayPlayer).distributions[internalDan]
-        : (internalDan: number) => ({1:1, 2:1, 3:1, 4:1}) // TODO: Fallback
+        : (internalDan: number) => (props.player as FunctionPlayer).distributionFunction.distributionFunction!(internalDan)
     const _dans =
         props.player.kind === 'array'
         ? props.player.distributions.map((_, i) => i)
         : dans
     const danEfficiency =
         props.player.kind !== 'independent'
+    if (props.player.kind === 'function' && props.player.distributionFunction.distributionFunction === undefined)
+        return <Typography>Error in distribution(dan) function definition</Typography>
     return <DanInformationTable
         distribution={distribution}
         dans={_dans}

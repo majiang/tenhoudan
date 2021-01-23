@@ -47,18 +47,46 @@ export class ArrayPlayer
     }
 }
 
+type DistributionFunction =
+{
+    distributionFunctionString: string,
+    distributionFunction?: (currentDan: number) => Distribution,
+}
+export function distributionFunction(functionBody: string): DistributionFunction
+{
+    let ret: undefined | ((currentDan: number) => Distribution) = undefined
+    try
+    {
+        ret = new Function('dan', functionBody) as ((currentDan: number) => Distribution)
+    }
+    catch (e)
+    {
+        console.error(e)
+    }
+    return {
+        distributionFunctionString: functionBody,
+        distributionFunction: ret
+    }
+}
+
 export class FunctionPlayer
 {
     kind: 'function' = 'function'
-    distribution: (currentDan: number) => Distribution
-    constructor (distribution: (currentDan: number) => Distribution)
+    distributionFunction: DistributionFunction
+    maxInternalDan: number
+    constructor (distributionFunction: DistributionFunction, maxInternalDan: number)
     {
-        this.distribution = distribution
+        this.distributionFunction = distributionFunction
+        this.maxInternalDan = maxInternalDan
     }
-    setDistribution(distribution: (currentDan: number) => Distribution)
+    setMaxInternalDan(maxInternalDan: number)
     {
-        this.distribution = distribution
+        this.maxInternalDan = maxInternalDan
         return this
+    }
+    setDistributionFunction(functionBody: string)
+    {
+        return new FunctionPlayer(distributionFunction(functionBody), this.maxInternalDan)
     }
 }
 
@@ -83,6 +111,8 @@ export function defaultPlayerOf(playerType: PlayerType): Player
             fromSimple([250, 250, 250, 250]),
             fromSimple([250, 250, 250, 250]), // 10D
         ])
-        case 'function': return new FunctionPlayer((currentDan: number) => fromSimple([2500, 2500, 2500, 2500]))
+        case 'function': return new FunctionPlayer(
+            distributionFunction('return [2500, 2500, 2500, 2500]'),
+            13)
     }
 }
